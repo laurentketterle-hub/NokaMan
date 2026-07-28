@@ -126,3 +126,12 @@ def score_writing_sample(sample: Mapping[str, object]) -> dict:
 
 def _optional_int(value: object) -> int | None:
     return None if value is None else int(value)
+
+def score_writing_readability(text):
+    words=text.split()
+    sentences=[s.strip() for s in text.replace("!",".").replace("?",".").split(".") if s.strip()]
+    if not words or not sentences: raise ValueError("Empty")
+    avg=len(words)/len(sentences)
+    long=sum(1 for w in words if len(w)>6)
+    s=max(0,min(100,100-abs(avg-15)*3-(long/max(1,len(words)))*50))
+    return {"score":round(s,2),"avg_sent_len":round(avg,1),"long_word_ratio":round(long/max(1,len(words)),2)}
