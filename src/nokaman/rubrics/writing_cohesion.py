@@ -135,3 +135,13 @@ def score_writing_readability(text):
     long=sum(1 for w in words if len(w)>6)
     s=max(0,min(100,100-abs(avg-15)*3-(long/max(1,len(words)))*50))
     return {"score":round(s,2),"avg_sent_len":round(avg,1),"long_word_ratio":round(long/max(1,len(words)),2)}
+
+def score_batch(texts):
+    return [score_writing_cohesion(t) for t in texts]
+
+def export_scores_json(texts, path):
+    import json
+    results = [{"text": t[:100], "result": score_writing_cohesion(t)} for t in texts]
+    with open(path, "w") as f:
+        json.dump(results, f, indent=2)
+    return path
