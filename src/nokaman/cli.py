@@ -37,6 +37,122 @@ app.add_typer(eval_app, name="eval")
 session_app = typer.Typer(help="Adaptive quiz session (state machine)")
 app.add_typer(session_app, name="session")
 app.add_typer(train_app, name="train")
+
+# ── samples subcommand ────────────────────────────────────────────────
+samples_app = typer.Typer(help="Browse sample inventory")
+app.add_typer(samples_app, name="samples")
+
+
+@samples_app.command("list")
+def samples_list(
+    language: str = typer.Option("", "--language", "-l", help="Filter by language code (e.g. en, ko, ja)"),
+    skill: str = typer.Option("", "--skill", "-s", help="Filter by skill (e.g. reading, listening)"),
+) -> None:
+    """List available samples with optional language/skill filters."""
+    from pathlib import Path
+
+    files = list_sample_files()
+    language = language.strip().lower()
+    skill = skill.strip().lower()
+
+    # Parse stems: {lang}_{skill}_{id}.json
+    parsed = []
+    for path in files:
+        stem = path.stem
+        parts = stem.split("_")
+        lang = parts[0] if parts else "?"
+        sk = parts[1] if len(parts) > 1 else "?"
+        sample_id = "_".join(parts[2:]) if len(parts) > 2 else ""
+        if language and lang.lower() != language:
+            continue
+        if skill and sk.lower() != skill:
+            continue
+        parsed.append((lang, sk, sample_id, path))
+
+    if not parsed:
+        console.print("[yellow]No samples match the filters.[/yellow]")
+        return
+
+    # Sort by language, then skill, then id
+    parsed.sort(key=lambda x: (x[0], x[1], x[2]))
+
+    table = Table(
+        title=f"Samples ({len(parsed)})" + (f" [lang={language}]" if language else "") + (f" [skill={skill}]" if skill else ""),
+        caption=f"Source: {len(files)} total samples across {len(set(p[0] for p in parsed))} languages",
+    )
+    table.add_column("Language", style="cyan", no_wrap=True)
+    table.add_column("Skill", style="green")
+    table.add_column("ID", style="dim")
+    table.add_column("Path", style="dim")
+
+    for lang, sk, sid, path in parsed:
+        table.add_row(lang, sk, sid or "—", str(path))
+
+    console.print(table)
+    console.print(f"[dim]{len(parsed)} sample(s) shown.[/dim]")
+
+
+@samples_app.command("stats")
+def samples_stats(
+    language: str = typer.Option("", "--language", "-l", help="Filter by language code"),
+    skill: str = typer.Option("", "--skill", "-s", help="Filter by skill"),
+) -> None:
+    """Show sample statistics by language and skill."""
+    from collections import Counter
+
+    files = list_sample_files()
+    language = language.strip().lower()
+    skill = skill.strip().lower()
+
+    by_lang: Counter[str] = Counter()
+    by_skill: Counter[str] = Counter()
+    lang_skill: Counter[str] = Counter()
+
+    for path in files:
+        stem = path.stem
+        parts = stem.split("_")
+        lang = parts[0] if parts else "?"
+        sk = parts[1] if len(parts) > 1 else "?"
+        if language and lang.lower() != language:
+            continue
+        if skill and sk.lower() != skill:
+            continue
+        by_lang[lang] += 1
+        by_skill[sk] += 1
+        lang_skill[f"{lang}/{sk}"] += 1
+
+    if not by_lang:
+        console.print("[yellow]No samples match the filters.[/yellow]")
+        return
+
+    console.print(f"[bold]Sample Statistics[/bold] ({len(files)} total)")
+    console.print()
+
+    # By language
+    lang_table = Table(title="By Language")
+    lang_table.add_column("Code", style="cyan")
+    lang_table.add_column("Count", style="green")
+    for lang_code, count in sorted(by_lang.items()):
+        lang_table.add_row(lang_code, str(count))
+    console.print(lang_table)
+    console.print()
+
+    # By skill
+    skill_table = Table(title="By Skill")
+    skill_table.add_column("Skill", style="cyan")
+    skill_table.add_column("Count", style="green")
+    for sk_name, count in sorted(by_skill.items()):
+        skill_table.add_row(sk_name, str(count))
+    console.print(skill_table)
+    console.print()
+
+    # Cross-tabulation
+    cross_table = Table(title="Language × Skill")
+    cross_table.add_column("Language/Skill", style="cyan")
+    cross_table.add_column("Count", style="green")
+    for combo, count in sorted(lang_skill.items()):
+        cross_table.add_row(combo, str(count))
+    console.print(cross_table)
 console = Console()
 
 
