@@ -7,6 +7,9 @@ from nokaman.rubrics.speaking_fluency import (
 from nokaman.rubrics.writing_cohesion import (
     score_writing_cohesion,
     score_writing_sample,
+    score_batch,
+    export_scores_json,
+    score_writing_readability,
 )
 
 __all__ = [
@@ -14,4 +17,7 @@ __all__ = [
     "score_speaking_sample",
     "score_writing_cohesion",
     "score_writing_sample",
+    "score_batch",
+    "export_scores_json",
+    "score_writing_readability",
 ]

@@ -16,7 +16,69 @@
     },
     "writing": {
       "weight": 1.2,
-      "notes": "Vietnamese writing descriptor"
+      "notes": "Vietnamese writing descriptor",
+      "dimensions": {
+        "cohesion_coherence": {
+          "weight": 1.0,
+          "notes": "Sử dụng các phép liên kết (từ nối, đại từ thay thế, từ lược bỏ, liên kết từ vựng) để tạo sự tiến triển logic và unity của văn bản",
+          "criteria": {
+            "C2": "Sử dụng nhiều phép liên kết tự nhiên và hiệu quả; văn bản liên kết hoàn toàn",
+            "C1": "Sử dụng các phép liên kết hiệu quả; phân đoạn phù hợp; văn bản liên kết và mạch lạc",
+            "B2": "Sử dụng các phép liên kết đa dạng; thường tổ chức tốt; có thể có lỗi nhỏ",
+            "B1": "Sử dụng một số phép liên kết cơ bản; thường tổ chức tốt nhưng có thể thiếu tiến triển tổng thể",
+            "A2": "Sử dụng hạn chế các phép liên kết; có thể lặp lại; tổ chức có thể không rõ ràng",
+            "A1": "Sử dụng ít hoặc không có phép liên kết; văn bản có thể khó theo dõi"
+          }
+        },
+        "vocabulary_writing": {
+          "weight": 1.0,
+          "notes": "Phạm vi và độ chính xác của từ vựng",
+          "criteria": {
+            "C2": "Phạm vi từ vựng rộng, sử dụng chính xác; không lỗi",
+            "C1": "Phạm vi từ vựng rộng cho hầu hết các chủ đề; sai sót không đáng kể",
+            "B2": "Đủ phạm vi để giao tiếp rõ ràng; một số lỗi chọn từ",
+            "B1": "Phạm vi hạn chế nhưng có thể truyền đạt ý; lỗi thường xuyên",
+            "A2": "Từ vựng cơ bản; lỗi thường xuyên gây hiểu lầm",
+            "A1": "Từ vựng rất hạn chế; giao tiếp gần như không thể"
+          }
+        },
+        "grammar_writing": {
+          "weight": 1.0,
+          "notes": "Độ chính xác ngữ pháp",
+          "criteria": {
+            "C2": "Kiểm soát nhất quán cấu trúc phức tạp; không lỗi",
+            "C1": "Kiểm soát tốt cấu trúc phức tạp; sai sót không đáng kể",
+            "B2": "Kiểm soát tốt cấu trúc đơn giản; một số cố gắng phức tạp; ít lỗi",
+            "B1": "Sử dụng cấu trúc đơn giản phù hợp; một số lỗi nhưng giao tiếp rõ ràng",
+            "A2": "Sử dụng một số cấu trúc đơn giản đúng; lỗi thường xuyên",
+            "A1": "Kiểm soát cấu trúc rất hạn chế; lỗi liên tục"
+          }
+        },
+        "organization": {
+          "weight": 1.0,
+          "notes": "Tổ chức logic và cấu trúc đoạn văn",
+          "criteria": {
+            "C2": "Tổ chức hoàn toàn logic với cấu trúc đoạn văn tinh vi; chuyển tiếp liền mạch",
+            "C1": "Tổ chức tốt với cấu trúc đoạn văn rõ ràng; chuyển tiếp hiệu quả xuyên suốt",
+            "B2": "Thường tổ chức tốt; phân đoạn đầy đủ; một số chuyển tiếp có thể máy móc",
+            "B1": "Tổ chức cơ bản với một số phân đoạn; sử dụng hạn chế chuyển tiếp",
+            "A2": "Tổ chức tối thiểu; đoạn văn có thể không được xác định rõ ràng",
+            "A1": "Không có tổ chức rõ ràng; ý tưởng được trình bày ngẫu nhiên"
+          }
+        },
+        "task_achievement": {
+          "weight": 1.0,
+          "notes": "Mức độ hoàn thành mục đích giao tiếp của bài viết",
+          "criteria": {
+            "C2": "Hoàn thành đầy đủ mục đích giao tiếp với sự tinh vi; tất cả các điểm được phát triển kỹ lưỡng",
+            "C1": "Hoàn thành hiệu quả mục đích giao tiếp; tất cả các điểm chính được đề cập",
+            "B2": "Hoàn thành mục đích giao tiếp; hầu hết các điểm được đề cập với sự phát triển đầy đủ",
+            "B1": "Hoàn thành một phần mục đích; một số điểm được phát triển, một số khác thì không",
+            "A2": "Hoàn thành hạn chế mục đích; ít điểm được đề cập",
+            "A1": "Không hoàn thành mục đích giao tiếp cơ bản"
+          }
+        }
+      }
     },
     "listening": {
       "weight": 1.0,

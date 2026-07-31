@@ -190,6 +190,52 @@ def rubrics_explain(
     console.print(f"Bands: {', '.join(report['bands'])}")
 
 
+@rubrics_app.command("dimensions")
+def rubrics_dimensions(
+    lang: str = typer.Option("en", "--lang", "-l"),
+    skill: str = typer.Option("writing", "--skill", "-s"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    """Show dimension-level rubric criteria for a language+skill."""
+    try:
+        meta = get_language_meta(lang)
+    except KeyError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    rubric = load_language_rubric(meta["code"])
+    skills = rubric.get("skills") or {}
+    skill_data = skills.get(skill) or {}
+    dimensions = skill_data.get("dimensions") or {}
+
+    if not dimensions:
+        console.print(f"[yellow]No dimensions defined for {skill} in {lang}[/yellow]")
+        raise typer.Exit()
+
+    if json_output:
+        console.print_json(data={
+            "language": meta["code"],
+            "skill": skill,
+            "dimensions": dimensions,
+        })
+        return
+
+    for dim_name, dim_data in dimensions.items():
+        dim_title = dim_name.replace("_", " ").title()
+        notes = dim_data.get("notes", "")
+        weight = dim_data.get("weight", 1.0)
+        criteria = dim_data.get("criteria", {})
+        console.print(f"\n[bold underline]{dim_title}[/bold underline] (weight={weight})")
+        console.print(f"[dim]{notes}[/dim]")
+        dim_table = Table(title="CEFR Criteria")
+        dim_table.add_column("Band")
+        dim_table.add_column("Descriptor")
+        for band in rubric.get("bands", []):
+            if band in criteria:
+                dim_table.add_row(band, criteria[band])
+        console.print(dim_table)
+
+
 @eval_app.command("text")
 def eval_text(
     lang: str = typer.Option("en", "--lang", "-l"),
@@ -233,6 +279,77 @@ def eval_samples() -> None:
             str(result.get("cefr")),
             str(result.get("score")),
         )
+    console.print(table)
+
+
+@eval_app.command("samples-list")
+def eval_samples_list(
+    language: Optional[str] = typer.Option(None, "--language", "-l", help="Filter by language code (e.g., en, fr)"),
+    skill: Optional[str] = typer.Option(None, "--skill", "-s", help="Filter by skill (e.g., writing, speaking)"),
+) -> None:
+    """List catalogued samples with optional language and skill filters."""
+    files = list_sample_files()
+    if not files:
+        console.print("[yellow]No samples[/yellow]")
+        raise typer.Exit()
+
+    # Apply filters
+    filtered_files = []
+    for path in files:
+        result = evaluate_sample_file(path)
+        lang_match = language is None or str(result.get("language", "")).lower() == language.lower()
+        skill_match = skill is None or str(result.get("skill", "")).lower() == skill.lower()
+        if lang_match and skill_match:
+            filtered_files.append((path, result))
+
+    if not filtered_files:
+        console.print("[yellow]No samples match the given filters[/yellow]")
+        raise typer.Exit()
+
+    table = Table(title=f"Samples ({len(filtered_files)} filtered)")
+    table.add_column("File")
+    table.add_column("Lang")
+    table.add_column("Skill")
+    table.add_column("CEFR")
+    table.add_column("Score")
+    for path, result in filtered_files:
+        table.add_row(
+            path.name,
+            str(result.get("language")),
+            str(result.get("skill")),
+            str(result.get("cefr")),
+            str(result.get("score")),
+        )
+    console.print(table)
+
+
+@eval_app.command("score")
+def eval_score(
+    sample: Path = typer.Option(..., "--sample", "-s", help="Path to sample JSON file", exists=True, dir_okay=False),
+) -> None:
+    """Score a single sample file and show detailed results."""
+    result = evaluate_sample_file(sample)
+    table = Table(title=f"Score: {sample.name}")
+    table.add_column("Field")
+    table.add_column("Value")
+    table.add_row("File", sample.name)
+    table.add_row("Language", str(result.get("language", "?")))
+    table.add_row("Skill", str(result.get("skill", "?")))
+    table.add_row("CEFR", str(result.get("cefr", "?")))
+    table.add_row("Score", str(result.get("score", "?")))
+    if result.get("expected_cefr"):
+        table.add_row("Expected CEFR", str(result.get("expected_cefr")))
+        if result.get("band_check"):
+            table.add_row("Band Check", str(result.get("band_check")))
+    if result.get("sample_id"):
+        table.add_row("Sample ID", str(result.get("sample_id")))
+    if result.get("source"):
+        table.add_row("Source", str(result.get("source")))
+    if result.get("framework_bands"):
+        fb = result.get("framework_bands")
+        if isinstance(fb, dict):
+            for k, v in fb.items():
+                table.add_row(f"Band {k}", str(v))
     console.print(table)
 
 
