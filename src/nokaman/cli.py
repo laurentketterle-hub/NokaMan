@@ -420,19 +420,20 @@ if __name__ == "__main__":
 
 # --- batch-evaluate export (Issue #32) ---
 
-@batch_evaluate.command("export")
-@click.option("--format", "fmt", type=click.Choice(["csv", "json"]), default="csv")
-@click.option("--output", "-o", default=None, help="Output file path")
-@click.option("--dataset", "-d", default=None, help="Filter by dataset name")
-def batch_export(fmt, output, dataset):
+@eval_app.command("export")
+def batch_export(
+    fmt: str = typer.Option("csv", "--format", help="Output format"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path"),
+    dataset: Optional[str] = typer.Option(None, "--dataset", "-d", help="Filter by dataset name"),
+) -> None:
     """Export evaluation results in CSV or JSON format."""
-    import csv, json as _json
+    import csv
     from pathlib import Path
 
     results = _load_evaluation_results(dataset)
     if not results:
-        click.echo("No evaluation results found. Run batch-evaluate first.")
-        return 1
+        console.print("[red]No evaluation results found. Run batch-evaluate first.[/red]")
+        raise typer.Exit(1)
 
     if fmt == "csv":
         if not output:
@@ -449,15 +450,14 @@ def batch_export(fmt, output, dataset):
                     "latency_ms": r.get("latency_ms", 0),
                     "timestamp": r.get("timestamp", "")
                 })
-        click.echo(f"CSV exported: {len(results)} rows -> {output}")
-    elif fmt == "json":
+        console.print(f"[green]CSV exported: {len(results)} rows -> {output}[/green]")
+    else:
         if not output:
             output = f"evaluation_{dataset or 'results'}.json"
         Path(output).parent.mkdir(parents=True, exist_ok=True)
         with open(output, "w", encoding="utf-8") as f:
-            _json.dump(results, f, indent=2, default=str)
-        click.echo(f"JSON exported: {len(results)} records -> {output}")
-    return 0
+            json.dump(results, f, indent=2, default=str)
+        console.print(f"[green]JSON exported: {len(results)} records -> {output}[/green]")
 
 
 def _load_evaluation_results(dataset=None):
