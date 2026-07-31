@@ -15,6 +15,7 @@ from nokaman.data.loader import list_sample_files, list_rubric_files, load_rubri
 from nokaman.eval.metrics import batch_evaluate, placement_test
 from nokaman.eval.pipeline import evaluate_demo, evaluate_sample_file, evaluate_text
 from nokaman.eval.session import SessionManager
+from nokaman.models.cefr import score_to_cefr
 from nokaman.rubrics.registry import (
     SKILLS,
     SUPPORTED_LANGUAGES,
@@ -210,6 +211,196 @@ def eval_text(
 @eval_app.command("demo")
 def eval_demo(lang: str = typer.Option("en", "--lang", "-l")) -> None:
     _print_json(data=evaluate_demo(lang))
+
+
+def _color_for_score(score: float) -> str:
+    """Return a rich color name for a 0-100 score."""
+    if score >= 80:
+        return "green"
+    if score >= 60:
+        return "bright_green"
+    if score >= 40:
+        return "yellow"
+    if score >= 20:
+        return "bright_yellow"
+    return "red"
+
+
+def _cefr_emoji(cefr: str) -> str:
+    """Return a visual indicator for CEFR bands."""
+    return {"C2": "🟢", "C1": "🟢", "B2": "🔵", "B1": "🔵", "A2": "🟡", "A1": "🟠"}.get(
+        (cefr or "").upper(), "⚪"
+    )
+
+
+@eval_app.command("score")
+def eval_score(
+    sample: Path | None = typer.Option(
+        None,
+        "--sample",
+        "-s",
+        exists=True,
+        dir_okay=False,
+        help="Path to a sample JSON file.",
+    ),
+    lang: str = typer.Option("en", "--lang", "-l", help="Language code (en/ko/ja/vi/zh/…)."),
+    text: str | None = typer.Option(None, "--text", "-t", help="Inline text to score."),
+    skill: str = typer.Option("writing", "--skill", "-k", help="Primary skill to score."),
+    json_output: bool = typer.Option(False, "--json", help="Print raw JSON instead of table."),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Show detailed feature breakdown."
+    ),
+) -> None:
+    """Score a sample file or inline text and show per-dimension metrics as a rich table.
+
+    Examples:
+        nokaman eval score --sample data/samples/en_writing_b1.json
+        nokaman eval score --text "I enjoy learning languages." --lang en
+        nokaman eval score --sample data/samples/ko_writing_b2.json --verbose
+        nokaman eval score --text "Bonjour le monde" --lang fr --json
+    """
+    import time
+
+    t0 = time.perf_counter()
+
+    # ── Resolve input ──
+    if sample is not None:
+        from nokaman.data.loader import load_sample
+
+        sample_data = load_sample(sample)
+        input_lang = str(sample_data.get("language") or lang)
+        input_skill = str(sample_data.get("skill") or skill)
+        input_text = str(sample_data.get("text") or "")
+        expected_cefr = sample_data.get("expected_cefr")
+        # Run the standard pipeline for the primary result
+        result = evaluate_sample_file(sample)
+    elif text is not None:
+        input_lang = lang
+        input_skill = skill
+        input_text = text
+        expected_cefr = None
+        result = evaluate_text(input_lang, input_text, skill=input_skill)
+    else:
+        console.print("[red]Provide --sample <path> or --text <str>[/red]")
+        raise typer.Exit(code=1)
+
+    elapsed = time.perf_counter() - t0
+
+    # ── JSON output path ──
+    if json_output:
+        _print_json(data=result)
+        return
+
+    # ── Multi-skill scores for the dimension table ──
+    from nokaman.models.toy import ToyAbilityModel
+
+    model = ToyAbilityModel(language=input_lang)
+    multi = model.score_multi_skill(input_text)
+
+    # ── DIMENSION TABLE ──
+    dim_table = Table(
+        title=f"📊  Score Dimensions  —  {input_lang.upper()} / {input_skill}",
+        title_style="bold white",
+        border_style="bright_black",
+        show_header=True,
+        header_style="bold cyan",
+    )
+    dim_table.add_column("Dimension", no_wrap=True, style="bold")
+    dim_table.add_column("Score", justify="right")
+    dim_table.add_column("Bar", justify="left")
+    dim_table.add_column("CFR", justify="center")
+
+    skill_labels = {
+        "vocabulary": "Vocabulary",
+        "grammar": "Grammar",
+        "reading": "Reading",
+        "writing": "Writing",
+        "listening": "Listening",
+        "speaking": "Speaking",
+    }
+    for sk in ("writing", "vocabulary", "grammar", "reading", "listening", "speaking"):
+        sk_score = float(multi["skills"].get(sk, 0))
+        color = _color_for_score(sk_score)
+        bar_len = max(1, int(sk_score / 5))
+        bar = "█" * bar_len + "░" * (20 - bar_len)
+        cefr_band = score_to_cefr(sk_score)
+        dim_table.add_row(
+            skill_labels.get(sk, sk),
+            f"[{color}]{sk_score:.1f}[/{color}]",
+            f"[{color}]{bar}[/{color}]",
+            f"[{color} bold]{_cefr_emoji(cefr_band)} {cefr_band}[/{color} bold]",
+        )
+
+    console.print(dim_table)
+
+    # ── OVERALL SUMMARY ──
+    overall = float(multi["overall"])
+    overall_cefr = multi["cefr"]
+    overall_color = _color_for_score(overall)
+
+    console.print(
+        f"  [bold]Overall[/bold]: [bold {overall_color}]{overall:.1f}[/bold {overall_color}]  "
+        f"  CEFR: [bold yellow]{_cefr_emoji(overall_cefr)} {overall_cefr}[/bold yellow]"
+        f"  [dim]({elapsed*1000:.0f} ms)[/dim]"
+    )
+
+    # ── Framework Equivalents ──
+    bands = result.get("framework_bands") or {}
+    if bands and len(bands) > 1:  # more than just 'cefr'
+        band_parts = []
+        if "jlpt" in bands:
+            band_parts.append(f"JLPT: [bold]{bands['jlpt']}[/bold]")
+        if "topik" in bands:
+            band_parts.append(f"TOPIK: [bold]{bands['topik']}[/bold]")
+        if "hsk" in bands:
+            band_parts.append(f"HSK: [bold]{bands['hsk']}[/bold]")
+        if "ielts_approx" in bands:
+            band_parts.append(f"IELTS≈: [bold]{bands['ielts_approx']}[/bold]")
+        if "toeic_approx" in bands:
+            band_parts.append(f"TOEIC≈: [bold]{bands['toeic_approx']}[/bold]")
+        if band_parts:
+            console.print(f"  [dim]Frameworks:[/dim] {'  |  '.join(band_parts)}")
+
+    # ── Expected CEFR comparison ──
+    if expected_cefr:
+        chk = result.get("band_check") or {}
+        match_icon = "✅" if chk.get("exact_match") else "❌"
+        console.print(
+            f"  [dim]Expected CEFR:[/dim] {expected_cefr}  "
+            f"{match_icon} {chk.get('predicted','?')}  "
+            f"[dim](distance={chk.get('distance','?')})[/dim]"
+        )
+
+    # ── FEATURE BREAKDOWN (verbose or always in a compact panel) ──
+    features = result.get("features") or {}
+    if features:
+        feat_table = Table(
+            title="🔬  Feature Breakdown",
+            title_style="bold dim",
+            border_style="bright_black",
+            show_header=True,
+            header_style="dim",
+        )
+        feat_table.add_column("Feature", style="dim")
+        feat_table.add_column("Value", justify="right")
+        feat_labels = {
+            "tokens": "Token count",
+            "unique_tokens": "Unique tokens",
+            "avg_token_len": "Avg token length",
+            "connectors": "Connectors found",
+            "sentences": "Sentences",
+            "script_bonus": "Script bonus",
+        }
+        for key, label in feat_labels.items():
+            val = features.get(key)
+            if val is not None:
+                feat_table.add_row(label, str(val))
+        console.print(feat_table)
+
+    # ── Footer ──
+    if sample:
+        console.print(f"  [dim]Source: {sample}[/dim]")
+    console.print(f"  [dim]Model: {result.get('model','ToyAbilityModel')}  |  NokaMan v{__version__}[/dim]")
 
 
 @eval_app.command("samples")
