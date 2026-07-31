@@ -416,3 +416,71 @@ def serve_cmd(
 
 if __name__ == "__main__":
     app()
+
+
+# --- batch-evaluate export (Issue #32) ---
+
+@batch_evaluate.command("export")
+@click.option("--format", "fmt", type=click.Choice(["csv", "json"]), default="csv")
+@click.option("--output", "-o", default=None, help="Output file path")
+@click.option("--dataset", "-d", default=None, help="Filter by dataset name")
+def batch_export(fmt, output, dataset):
+    """Export evaluation results in CSV or JSON format."""
+    import csv, json as _json
+    from pathlib import Path
+
+    results = _load_evaluation_results(dataset)
+    if not results:
+        click.echo("No evaluation results found. Run batch-evaluate first.")
+        return 1
+
+    if fmt == "csv":
+        if not output:
+            output = f"evaluation_{dataset or 'results'}.csv"
+        Path(output).parent.mkdir(parents=True, exist_ok=True)
+        with open(output, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["model", "dataset", "score", "latency_ms", "timestamp"])
+            writer.writeheader()
+            for r in results:
+                writer.writerow({
+                    "model": r.get("model", ""),
+                    "dataset": r.get("dataset", ""),
+                    "score": r.get("score", 0),
+                    "latency_ms": r.get("latency_ms", 0),
+                    "timestamp": r.get("timestamp", "")
+                })
+        click.echo(f"CSV exported: {len(results)} rows -> {output}")
+    elif fmt == "json":
+        if not output:
+            output = f"evaluation_{dataset or 'results'}.json"
+        Path(output).parent.mkdir(parents=True, exist_ok=True)
+        with open(output, "w", encoding="utf-8") as f:
+            _json.dump(results, f, indent=2, default=str)
+        click.echo(f"JSON exported: {len(results)} records -> {output}")
+    return 0
+
+
+def _load_evaluation_results(dataset=None):
+    """Load cached evaluation results from data/evaluations/ directory."""
+    import json as _json
+    from pathlib import Path
+
+    results_dir = Path("data") / "evaluations"
+    if not results_dir.exists():
+        return []
+
+    all_results = []
+    for fp in sorted(results_dir.glob("*.json")):
+        try:
+            raw = fp.read_text(encoding="utf-8")
+            data = _json.loads(raw)
+            if isinstance(data, list):
+                all_results.extend(data)
+            elif isinstance(data, dict):
+                all_results.append(data)
+        except (OSError, ValueError, _json.JSONDecodeError):
+            continue
+
+    if dataset:
+        all_results = [r for r in all_results if r.get("dataset") == dataset]
+    return all_results
