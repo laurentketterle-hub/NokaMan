@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -11,7 +12,17 @@ from rich.table import Table
 from nokaman import __version__
 from nokaman.config import OUT_DIR, RUNS_DIR
 from nokaman.data.coverage import language_skill_coverage
-from nokaman.data.loader import list_sample_files, list_rubric_files, load_rubric
+from nokaman.data.loader import (
+    catalog_samples,
+    filter_catalog,
+    list_sample_files,
+    list_rubric_files,
+    load_rubric,
+    sample_info,
+    summary_by_cefr,
+    summary_by_language,
+    summary_by_skill,
+)
 from nokaman.eval.metrics import batch_evaluate, placement_test
 from nokaman.eval.pipeline import evaluate_demo, evaluate_sample_file, evaluate_text
 from nokaman.eval.session import SessionManager
@@ -45,114 +56,198 @@ app.add_typer(samples_app, name="samples")
 
 @samples_app.command("list")
 def samples_list(
-    language: str = typer.Option("", "--language", "-l", help="Filter by language code (e.g. en, ko, ja)"),
-    skill: str = typer.Option("", "--skill", "-s", help="Filter by skill (e.g. reading, listening)"),
+    language: str = typer.Option("", "--language", "-l", help="Filter by language code (e.g. en, de, ar)"),
+    skill: str = typer.Option("", "--skill", "-s", help="Filter by skill (e.g. writing, speaking)"),
+    cefr: str = typer.Option("", "--cefr", "-c", help="Filter by CEFR level (e.g. A1, B2)"),
+    sort_by: str = typer.Option(
+        "language", "--sort-by", help="Sort by: language, skill, cefr, id, text_length"
+    ),
+    limit: int = typer.Option(0, "--limit", "-n", min=0, help="Show only the first N records"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON array"),
 ) -> None:
-    """List available samples with optional language/skill filters."""
-    from pathlib import Path
+    """List catalogued samples with optional language, skill, and CEFR filters."""
+    records = filter_catalog(
+        language=language.strip() if language else None,
+        skill=skill.strip() if skill else None,
+        cefr=cefr.strip() if cefr else None,
+    )
 
-    files = list_sample_files()
-    language = language.strip().lower()
-    skill = skill.strip().lower()
+    # Sort
+    sort_key = sort_by.strip().lower()
+    if sort_key in ("cefr", "expected_cefr"):
+        # CEFR order: A1 < A2 < B1 < B2 < C1 < C2, then everything else
+        _cefr_rank = {"A1": 0, "A2": 1, "B1": 2, "B2": 3, "C1": 4, "C2": 5}
 
-    # Parse stems: {lang}_{skill}_{id}.json
-    parsed = []
-    for path in files:
-        stem = path.stem
-        parts = stem.split("_")
-        lang = parts[0] if parts else "?"
-        sk = parts[1] if len(parts) > 1 else "?"
-        sample_id = "_".join(parts[2:]) if len(parts) > 2 else ""
-        if language and lang.lower() != language:
-            continue
-        if skill and sk.lower() != skill:
-            continue
-        parsed.append((lang, sk, sample_id, path))
+        def _cefr_sort(r: dict) -> int:
+            return _cefr_rank.get(str(r.get("expected_cefr") or "").upper(), 99)
 
-    if not parsed:
-        console.print("[yellow]No samples match the filters.[/yellow]")
+        records.sort(key=_cefr_sort)
+    elif sort_key == "skill":
+        records.sort(key=lambda r: str(r.get("skill") or "").lower())
+    elif sort_key == "id":
+        records.sort(key=lambda r: str(r.get("id") or "").lower())
+    elif sort_key == "text_length":
+        records.sort(key=lambda r: int(r.get("text_length") or 0))
+    else:  # default: language
+        records.sort(key=lambda r: str(r.get("language") or "").lower())
+
+    if limit > 0:
+        records = records[:limit]
+
+    if json_output:
+        # Strip internal-only keys from JSON output
+        json_records = [
+            {k: v for k, v in r.items() if k not in ("text",)}
+            for r in records
+        ]
+        console.print_json(data=json_records)
         return
 
-    # Sort by language, then skill, then id
-    parsed.sort(key=lambda x: (x[0], x[1], x[2]))
+    if not records:
+        filters = []
+        if language:
+            filters.append(f"lang={language.strip().lower()}")
+        if skill:
+            filters.append(f"skill={skill.strip().lower()}")
+        if cefr:
+            filters.append(f"CEFR={cefr.strip().upper()}")
+        tag = ", ".join(filters) if filters else "any"
+        console.print(f"[yellow]No samples match filters ({tag}).[/yellow]")
+        return
 
-    table = Table(
-        title=f"Samples ({len(parsed)})" + (f" [lang={language}]" if language else "") + (f" [skill={skill}]" if skill else ""),
-        caption=f"Source: {len(files)} total samples across {len(set(p[0] for p in parsed))} languages",
-    )
-    table.add_column("Language", style="cyan", no_wrap=True)
+    table = Table(title=f"Samples ({len(records)})")
+    table.add_column("ID", no_wrap=True)
+    table.add_column("Lang", style="cyan", no_wrap=True)
     table.add_column("Skill", style="green")
-    table.add_column("ID", style="dim")
-    table.add_column("Path", style="dim")
-
-    for lang, sk, sid, path in parsed:
-        table.add_row(lang, sk, sid or "—", str(path))
-
+    table.add_column("CEFR", style="magenta", no_wrap=True)
+    table.add_column("Len", justify="right")
+    for r in records:
+        table.add_row(
+            str(r.get("id") or "?"),
+            str(r.get("language") or ""),
+            str(r.get("skill") or ""),
+            str(r.get("expected_cefr") or ""),
+            str(r.get("text_length") or "0"),
+        )
     console.print(table)
-    console.print(f"[dim]{len(parsed)} sample(s) shown.[/dim]")
+    console.print(f"[dim]{len(records)} sample(s) shown.[/dim]")
+
+
+@lru_cache(maxsize=1)
+def _all_records() -> list[dict]:
+    return catalog_samples()
 
 
 @samples_app.command("stats")
 def samples_stats(
     language: str = typer.Option("", "--language", "-l", help="Filter by language code"),
     skill: str = typer.Option("", "--skill", "-s", help="Filter by skill"),
+    cefr: str = typer.Option("", "--cefr", "-c", help="Filter by CEFR level"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
-    """Show sample statistics by language and skill."""
-    from collections import Counter
+    """Show sample statistics: by language, skill, CEFR, with cross-tabulation."""
+    records = filter_catalog(
+        language=language.strip() if language else None,
+        skill=skill.strip() if skill else None,
+        cefr=cefr.strip() if cefr else None,
+    )
+    all_records = _all_records()
+    total = len(all_records)
 
-    files = list_sample_files()
-    language = language.strip().lower()
-    skill = skill.strip().lower()
+    if json_output:
+        console.print_json(data={
+            "total_samples": total,
+            "matched": len(records),
+            "filters": {
+                "language": language.strip() if language else None,
+                "skill": skill.strip() if skill else None,
+                "cefr": cefr.strip() if cefr else None,
+            },
+            "by_language": summary_by_language(),
+            "by_skill": summary_by_skill(),
+            "by_cefr": summary_by_cefr(),
+        })
+        return
 
-    by_lang: Counter[str] = Counter()
-    by_skill: Counter[str] = Counter()
-    lang_skill: Counter[str] = Counter()
-
-    for path in files:
-        stem = path.stem
-        parts = stem.split("_")
-        lang = parts[0] if parts else "?"
-        sk = parts[1] if len(parts) > 1 else "?"
-        if language and lang.lower() != language:
-            continue
-        if skill and sk.lower() != skill:
-            continue
-        by_lang[lang] += 1
-        by_skill[sk] += 1
-        lang_skill[f"{lang}/{sk}"] += 1
-
-    if not by_lang:
+    if not records:
         console.print("[yellow]No samples match the filters.[/yellow]")
         return
 
-    console.print(f"[bold]Sample Statistics[/bold] ({len(files)} total)")
+    console.print(f"[bold]Sample Statistics[/bold] ({total} total, {len(records)} matched)")
     console.print()
 
     # By language
+    lang_counts = summary_by_language()
     lang_table = Table(title="By Language")
-    lang_table.add_column("Code", style="cyan")
-    lang_table.add_column("Count", style="green")
-    for lang_code, count in sorted(by_lang.items()):
-        lang_table.add_row(lang_code, str(count))
+    lang_table.add_column("Code", style="cyan", no_wrap=True)
+    lang_table.add_column("Count", style="green", justify="right")
+    lang_table.add_column("Bar", style="dim")
+    max_lang = max(lang_counts.values()) if lang_counts else 1
+    for lang_code, count in sorted(lang_counts.items()):
+        bar = "█" * max(1, int(count / max_lang * 20))
+        lang_table.add_row(lang_code, str(count), bar)
     console.print(lang_table)
     console.print()
 
     # By skill
+    skill_counts = summary_by_skill()
     skill_table = Table(title="By Skill")
     skill_table.add_column("Skill", style="cyan")
-    skill_table.add_column("Count", style="green")
-    for sk_name, count in sorted(by_skill.items()):
-        skill_table.add_row(sk_name, str(count))
+    skill_table.add_column("Count", style="green", justify="right")
+    skill_table.add_column("Bar", style="dim")
+    max_skill = max(skill_counts.values()) if skill_counts else 1
+    for sk_name, count in sorted(skill_counts.items()):
+        bar = "█" * max(1, int(count / max_skill * 20))
+        skill_table.add_row(sk_name, str(count), bar)
     console.print(skill_table)
     console.print()
 
-    # Cross-tabulation
-    cross_table = Table(title="Language × Skill")
-    cross_table.add_column("Language/Skill", style="cyan")
-    cross_table.add_column("Count", style="green")
-    for combo, count in sorted(lang_skill.items()):
-        cross_table.add_row(combo, str(count))
-    console.print(cross_table)
+    # By CEFR
+    cefr_counts = summary_by_cefr()
+    cefr_table = Table(title="By CEFR Level")
+    cefr_table.add_column("Level", style="magenta")
+    cefr_table.add_column("Count", style="green", justify="right")
+    cefr_table.add_column("Bar", style="dim")
+    max_cefr = max(cefr_counts.values()) if cefr_counts else 1
+    for level, count in sorted(cefr_counts.items()):
+        bar = "█" * max(1, int(count / max_cefr * 20))
+        cefr_table.add_row(level, str(count), bar)
+    console.print(cefr_table)
+
+
+@samples_app.command("info")
+def samples_info(
+    sample_id: str = typer.Argument(..., help="Sample ID to look up"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
+    """Show full details for a single sample by its ID."""
+    rec = sample_info(sample_id)
+    if rec is None:
+        console.print(f"[yellow]Sample not found:[/yellow] {sample_id}")
+        raise typer.Exit(code=1)
+
+    if json_output:
+        console.print_json(data=rec)
+        return
+
+    # Rich panel display
+    from rich.panel import Panel
+
+    lines = [
+        f"[bold cyan]ID:[/bold cyan] {rec.get('id', '?')}",
+        f"[bold cyan]File:[/bold cyan] {rec.get('file', '?')}",
+        f"[bold cyan]Language:[/bold cyan] {rec.get('language', '?')}",
+        f"[bold cyan]Skill:[/bold cyan] {rec.get('skill', '?')}",
+        f"[bold cyan]CEFR:[/bold cyan] {rec.get('expected_cefr', '?')}",
+        f"[bold cyan]Text Length:[/bold cyan] {rec.get('text_length', 0)} chars",
+        "",
+        "[bold]Text:[/bold]",
+        rec.get("text", "") or "[dim](empty)[/dim]",
+    ]
+    panel = Panel("\n".join(lines), title=f"Sample: {rec.get('id', '?')}", border_style="cyan")
+    console.print(panel)
+
+
 console = Console()
 
 
