@@ -63,6 +63,58 @@ def batch_evaluate(sample_dir: Path | None = None) -> dict:
     }
 
 
+def compute_metrics(predictions: list[dict]) -> dict:
+    """Compute band accuracy, adjacent-band accuracy, and MAE on score.
+
+    Each prediction dict must have:
+      - score: float (predicted 0-100)
+      - cefr: str (predicted CEFR band)
+      - expected_score: float | None (gold 0-100, or None if unlabeled)
+      - expected_cefr: str | None (gold CEFR band, or None if unlabeled)
+
+    Returns a dict with:
+      - exact_cefr_hit_rate: fraction of labeled items with exact CEFR match
+      - adjacent_cefr_hit_rate: fraction within 0 or 1 band distance
+      - mae_score: mean absolute error on score (0-100 scale)
+      - n_labeled: number of items with ground truth
+    """
+    labeled = []
+    for p in predictions:
+        if p.get("expected_cefr") and p.get("expected_score") is not None:
+            labeled.append(p)
+
+    if not labeled:
+        return {
+            "exact_cefr_hit_rate": None,
+            "adjacent_cefr_hit_rate": None,
+            "mae_score": None,
+            "n_labeled": 0,
+        }
+
+    exact = 0
+    adjacent = 0
+    abs_errors = []
+    for p in labeled:
+        pred_band = str(p["cefr"]).upper()
+        exp_band = str(p["expected_cefr"]).upper()
+        dist = abs(cefr_rank(pred_band) - cefr_rank(exp_band))
+        if dist == 0:
+            exact += 1
+            adjacent += 1
+        elif dist == 1:
+            adjacent += 1
+        abs_errors.append(abs(float(p["score"]) - float(p["expected_score"])))
+
+    n = len(labeled)
+    mae = sum(abs_errors) / n
+    return {
+        "exact_cefr_hit_rate": round(exact / n, 4),
+        "adjacent_cefr_hit_rate": round(adjacent / n, 4),
+        "mae_score": round(mae, 2),
+        "n_labeled": n,
+    }
+
+
 def placement_test(language: str, answers: list[str]) -> dict:
     """
     Simple placement: score each short answer text, average overall CEFR.
