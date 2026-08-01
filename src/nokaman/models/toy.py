@@ -139,6 +139,8 @@ def _framework_bands(language: str, cefr: str, score: float) -> dict:
     if lang == "en":
         out["ielts_approx"] = ielts
         out["toeic_approx"] = toeic
+    if lang == "es":
+        out["dele"] = _dele_band(c)
     return out
 
 
@@ -153,6 +155,19 @@ def _topik_band(cefr: str) -> dict[str, str]:
         "track": track,
         "label": f"{track} Level {level}",
     }
+
+
+def _dele_band(cefr: str) -> str:
+    """Map CEFR band to DELE diploma name."""
+    mapping = {
+        "A1": "DELE A1",
+        "A2": "DELE A2",
+        "B1": "DELE B1",
+        "B2": "DELE B2",
+        "C1": "DELE C1",
+        "C2": "DELE C2",
+    }
+    return mapping.get(cefr, "DELE A1")
 
 
 def _script_bonus(text: str, language: str) -> float:

@@ -1,0 +1,40 @@
+{
+  "language": "es",
+  "name": "Spanish",
+  "skills": {
+    "vocabulary": {
+      "weight": 1.0,
+      "notes": "Spanish vocabulary: lexical range, collocations, false-friend avoidance, register-appropriate word choice"
+    },
+    "grammar": {
+      "weight": 1.0,
+      "notes": "Spanish grammar: ser/estar, subjunctive mood, preterite/imperfect aspect, clitic pronoun placement, agreement"
+    },
+    "reading": {
+      "weight": 1.0,
+      "notes": "Spanish reading: authentic texts, inferencing from Romance cognates, discourse connectors"
+    },
+    "writing": {
+      "weight": 1.2,
+      "notes": "Spanish writing: orthographic accent rules, cohesive devices (sin embargo, por lo tanto), register (tú/usted)"
+    },
+    "listening": {
+      "weight": 1.0,
+      "notes": "Spanish listening: dialectal variation (peninsular vs. LATAM), speech rate, linked speech phenomena"
+    },
+    "speaking": {
+      "weight": 1.0,
+      "notes": "Spanish speaking: syllable-timed rhythm, intonation patterns, discourse markers (pues, bueno, o sea)"
+    }
+  },
+  "bands": ["A1", "A2", "B1", "B2", "C1", "C2"],
+  "frameworks": ["CEFR", "DELE"],
+  "dele_mapping": {
+    "A1": "DELE A1",
+    "A2": "DELE A2",
+    "B1": "DELE B1 (formerly Inicial)",
+    "B2": "DELE B2 (formerly Intermedio)",
+    "C1": "DELE C1",
+    "C2": "DELE C2 (formerly Superior)"
+  }
+}
