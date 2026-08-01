@@ -11,7 +11,7 @@ from rich.table import Table
 from nokaman import __version__
 from nokaman.config import OUT_DIR, RUNS_DIR
 from nokaman.data.coverage import language_skill_coverage
-from nokaman.data.loader import list_sample_files, list_rubric_files, load_rubric
+from nokaman.data.loader import list_sample_files, list_rubric_files, load_rubric, load_sample
 from nokaman.eval.metrics import batch_evaluate, placement_test
 from nokaman.eval.pipeline import evaluate_demo, evaluate_sample_file, evaluate_text
 from nokaman.eval.session import SessionManager
@@ -73,6 +73,74 @@ def stats_cmd() -> None:
             "languages_supported": sorted(SUPPORTED_LANGUAGES),
         }
     )
+
+
+@app.command("score")
+def score_cmd(
+    sample: Path = typer.Option(
+        ..., "--sample", "-s", exists=True, dir_okay=False, help="Path to sample JSON file"
+    ),
+) -> None:
+    """Score a sample file and display dimension tables via rich."""
+    sample_data = load_sample(sample)
+    text = str(sample_data.get("text", ""))
+    expected = sample_data.get("expected_cefr")
+
+    result = evaluate_sample_file(sample)
+
+    # Overall
+    table = Table(title=f"NokaMan Score — {sample.name}")
+    table.add_column("Dimension", style="cyan")
+    table.add_column("Value", style="green")
+    table.add_row("Language", str(result.get("language")))
+    table.add_row("Skill", str(result.get("skill")))
+    table.add_row("Score", f"{result.get('score', 0):.2f}")
+    table.add_row("CEFR", str(result.get("cefr")))
+    if expected:
+        match_icon = "✅" if str(result.get("cefr", "")).upper() == str(expected).upper() else "❌"
+        table.add_row("Expected CEFR", f"{expected} {match_icon}")
+    band_check = result.get("band_check")
+    if band_check:
+        table.add_row("Band Match", str(band_check))
+    console.print(table)
+
+    # Features
+    features = result.get("features") or {}
+    if features:
+        ftable = Table(title="Features")
+        ftable.add_column("Feature", style="cyan")
+        ftable.add_column("Value", style="green", justify="right")
+        for k, v in features.items():
+            ftable.add_row(k.replace("_", " ").title(), str(v))
+        console.print(ftable)
+
+    # Framework bands
+    bands = result.get("framework_bands") or {}
+    if bands and len(bands) > 1:  # always has at least "cefr"
+        btable = Table(title="Framework Bands")
+        btable.add_column("Framework", style="cyan")
+        btable.add_column("Level", style="green")
+        for k, v in bands.items():
+            if k != "cefr":
+                btable.add_row(k.upper(), str(v))
+        if btable.row_count:
+            console.print(btable)
+
+    # Multi-skill breakdown
+    from nokaman.models.toy import ToyAbilityModel
+
+    model = ToyAbilityModel(language=str(result.get("language", "en")))
+    multi = model.score_multi_skill(text)
+    skills = multi.get("skills") or {}
+    if skills:
+        stable = Table(title="Multi-Skill Breakdown")
+        stable.add_column("Skill", style="cyan")
+        stable.add_column("Score", style="green", justify="right")
+        for skill_name, skill_score in skills.items():
+            stable.add_row(skill_name.title(), f"{skill_score:.2f}")
+        stable.add_section()
+        stable.add_row("Overall", f"{multi.get('overall', 0):.2f}", style="bold")
+        console.print(stable)
 
 
 @app.command("demo")
