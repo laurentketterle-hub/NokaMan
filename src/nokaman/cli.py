@@ -75,6 +75,48 @@ def stats_cmd() -> None:
     )
 
 
+samples_app = typer.Typer(help="Sample management and listing")
+app.add_typer(samples_app, name="samples")
+
+
+@samples_app.command("list")
+def samples_list(
+    language: Optional[str] = typer.Option(None, "--language", "-l", help="Filter by language code (en, ko, ja, ...)"),
+    skill: Optional[str] = typer.Option(None, "--skill", "-s", help="Filter by skill (writing, speaking, ...)"),
+) -> None:
+    """List catalogued samples with optional language/skill filters."""
+    files = list_sample_files()
+    if language:
+        lang_lower = language.strip().lower()
+        files = [p for p in files if p.stem.startswith(lang_lower + "_") or p.stem == lang_lower]
+    if skill:
+        skill_lower = skill.strip().lower()
+        files = [p for p in files if skill_lower in p.stem.lower().split("_")]
+
+    if not files:
+        console.print("[yellow]No samples found[/yellow]")
+        raise typer.Exit()
+
+    table = Table(title=f"Samples ({len(files)})")
+    table.add_column("File", style="cyan")
+    table.add_column("Language", style="green")
+    table.add_column("Skill", style="yellow")
+    table.add_column("Text preview", style="dim")
+    for path in files:
+        stem = path.stem
+        parts = stem.split("_")
+        lang = parts[0] if parts else "?"
+        skill_val = parts[1] if len(parts) > 1 else "?"
+        try:
+            sample = json.loads(path.read_text(encoding="utf-8"))
+            text = str(sample.get("text", "") or "")
+            preview = text[:60] + ("…" if len(text) > 60 else "")
+        except Exception:
+            preview = "(parse error)"
+        table.add_row(path.name, lang, skill_val, preview)
+    console.print(table)
+
+
 @app.command("demo")
 def demo_cmd(lang: str = typer.Option("en", "--lang", "-l")) -> None:
     """Full multi-skill demo for a language (end-to-end runnable)."""
@@ -240,9 +282,31 @@ def eval_samples() -> None:
 def eval_batch(
     out: Optional[Path] = typer.Option(None, "--out", "-o"),
     table: bool = typer.Option(True, "--table/--json-only"),
+    format: str = typer.Option("json", "--format", "-f", help="Output format: json or csv"),
 ) -> None:
     report = batch_evaluate()
     out_path = out or (RUNS_DIR / "batch_eval.json")
+
+    if format == "csv":
+        import csv
+        import io
+
+        out_csv = out_path.with_suffix(".csv") if out else (RUNS_DIR / "batch_eval.csv")
+        out_csv.parent.mkdir(parents=True, exist_ok=True)
+        rows_data = report.get("rows", [])
+        if rows_data:
+            fieldnames = ["file", "language", "skill", "score", "cefr", "expected_cefr", "distance"]
+            with open(out_csv, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+                writer.writeheader()
+                writer.writerows(rows_data)
+        console.print(
+            f"[green]batch csv[/green] n={report['n_samples']} rows={len(rows_data)} "
+            f"exact={report['exact_cefr_hit_rate']} adjacent={report['adjacent_cefr_hit_rate']}"
+        )
+        console.print(f"CSV: {out_csv}")
+        return
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     console.print(
