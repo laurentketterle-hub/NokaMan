@@ -272,3 +272,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the contributor path and org policy o
 ## License
 
 MIT · MergeOS / ThanhTrucSolutions
+
+
+## 🚀 Enhanced by Bounty Hunter
+
+### Quick Start
+```bash
+git clone https://github.com/mergeos-bounties/NokaMan.git
+cd NokaMan
+# Follow instructions above
+```
+
+### CI Status
+Automated testing and linting configured via GitHub Actions.
