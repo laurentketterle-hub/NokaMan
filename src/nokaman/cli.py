@@ -12,7 +12,8 @@ from nokaman import __version__
 from nokaman.config import OUT_DIR, RUNS_DIR
 from nokaman.data.coverage import language_skill_coverage
 from nokaman.data.loader import list_sample_files, list_rubric_files, load_rubric
-from nokaman.eval.metrics import batch_evaluate, placement_test
+from nokaman.eval.metrics import batch_evaluate
+from nokaman.eval.placement import PLACEMENT_PROMPTS, run_placement_cli as placement_test
 from nokaman.eval.pipeline import evaluate_demo, evaluate_sample_file, evaluate_text
 from nokaman.eval.session import SessionManager
 from nokaman.rubrics.registry import (
