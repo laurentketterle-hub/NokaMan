@@ -1,0 +1,15 @@
+{
+  "id": "en_speaking_asr_sample",
+  "language": "en",
+  "skill": "speaking",
+  "expected_cefr": "B1",
+  "text": "I enjoy practicing English with my classmates. We discuss a short topic, compare our ideas, and then explain what we learned to the rest of the group.",
+  "duration_seconds": 22.0,
+  "confidence": 0.92,
+  "fluency_observations": {
+    "duration_seconds": 22.0,
+    "pause_count": 2,
+    "filler_count": 0
+  },
+  "notes": "Synthetic ASR transcript fixture; no learner recording or personal data."
+}

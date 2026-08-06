@@ -13,7 +13,7 @@ from nokaman.config import OUT_DIR, RUNS_DIR
 from nokaman.data.coverage import language_skill_coverage
 from nokaman.data.loader import list_sample_files, list_rubric_files, load_rubric
 from nokaman.eval.metrics import batch_evaluate, placement_test
-from nokaman.eval.pipeline import evaluate_demo, evaluate_sample_file, evaluate_text
+from nokaman.eval.pipeline import evaluate_demo, evaluate_sample_file, evaluate_speaking_transcript, evaluate_text
 from nokaman.eval.session import SessionManager
 from nokaman.rubrics.registry import (
     SKILLS,
@@ -211,6 +211,14 @@ def eval_text(
 def eval_demo(lang: str = typer.Option("en", "--lang", "-l")) -> None:
     _print_json(data=evaluate_demo(lang))
 
+
+@eval_app.command("speaking-transcript")
+def eval_speaking_transcript(
+    file: Path = typer.Option(..., "--file", "-f", exists=True, dir_okay=False),
+) -> None:
+    """Score a speaking ASR transcript JSON file with fluency feedback."""
+    result = evaluate_speaking_transcript(file)
+    _print_json(data=result)
 
 @eval_app.command("samples")
 def eval_samples() -> None:
