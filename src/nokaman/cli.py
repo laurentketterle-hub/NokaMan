@@ -391,6 +391,73 @@ def session_end(
     _print_json(data=result)
 
 
+
+@app.command("score")
+def score_cmd(
+    sample: Path = typer.Option(..., "--sample", "-s", exists=True, dir_okay=False, help="Path to sample JSON file"),
+    lang: Optional[str] = typer.Option(None, "--lang", "-l", help="Override language"),
+    skill: Optional[str] = typer.Option(None, "--skill", "-k", help="Override skill"),
+) -> None:
+    """Score a single sample file with rich table output."""
+    from nokaman.data.loader import load_sample
+    from nokaman.models.toy import ToyAbilityModel
+    from nokaman.models.cefr import score_to_cefr
+
+    data = load_sample(sample)
+    language = lang or str(data.get("language") or "en")
+    target_skill = skill or str(data.get("skill") or "writing")
+    text = str(data.get("text") or "")
+
+    model = ToyAbilityModel(language=language)
+    result = model.score_text(text, skill=target_skill)
+    multi = model.score_multi_skill(text)
+
+    features = result.get("features", {})
+    bands = result.get("framework_bands", {})
+
+    console.print()
+    console.rule(f"[bold blue]Score Report[/bold blue] — {sample.name}")
+    console.print()
+
+    meta_table = Table(title="Sample Info", show_header=False, box=None)
+    meta_table.add_column("Key", style="dim"); meta_table.add_column("Value")
+    meta_table.add_row("File", str(sample))
+    meta_table.add_row("Language", language)
+    meta_table.add_row("Skill", target_skill)
+    expected = data.get("expected_cefr")
+    meta_table.add_row("Expected CEFR", str(expected) if expected else "(none)")
+    console.print(meta_table)
+
+    score_table = Table(title="Overall Score")
+    score_table.add_column("Metric", style="bold"); score_table.add_column("Value", justify="right")
+    score_table.add_row("Score", f"[bold green]{result['score']}[/bold green] / 100")
+    score_table.add_row("CEFR", f"[bold cyan]{result['cefr']}[/bold cyan]")
+    console.print(score_table)
+
+    skill_table = Table(title="Skill Breakdown")
+    skill_table.add_column("Skill", style="bold"); skill_table.add_column("Score", justify="right"); skill_table.add_column("CEFR", justify="right")
+    for sk, sc in sorted(multi.get("skills", {}).items()):
+        cefr_val = score_to_cefr(sc)
+        color = "green" if sc >= 60 else ("yellow" if sc >= 35 else "red")
+        skill_table.add_row(sk, f"[{color}]{sc:.1f}[/{color}]", cefr_val)
+    console.print(skill_table)
+
+    if bands:
+        band_table = Table(title="Framework Mapping")
+        band_table.add_column("Framework", style="bold"); band_table.add_column("Level", justify="right")
+        for k, v in bands.items():
+            band_table.add_row(str(k).upper(), str(v))
+        console.print(band_table)
+
+    if features:
+        feat_table = Table(title="Linguistic Features")
+        feat_table.add_column("Feature", style="bold"); feat_table.add_column("Value", justify="right")
+        for k, v in features.items():
+            feat_table.add_row(k.replace("_", " ").title(), str(v))
+        console.print(feat_table)
+
+    console.print()
+
 @app.command("gui")
 def gui_cmd() -> None:
     """Launch modern Qt desktop demo (pip install -e '.[gui]')."""
