@@ -1,0 +1,149 @@
+{
+  "language": "en",
+  "language_name": "English",
+  "frameworks": [
+    "CEFR",
+    "TOEIC",
+    "IELTS"
+  ],
+  "n_items": 5,
+  "overall_score": 55.38,
+  "overall_cefr": "B1",
+  "framework_bands": {
+    "cefr": "B2",
+    "ielts_approx": 7.2,
+    "toeic_approx": 687
+  },
+  "skill_breakdown": {
+    "writing": {
+      "n_items": 3,
+      "average_score": 57.22,
+      "cefr": "B1"
+    },
+    "vocabulary": {
+      "n_items": 1,
+      "average_score": 74.68,
+      "cefr": "B2"
+    },
+    "grammar": {
+      "n_items": 1,
+      "average_score": 30.55,
+      "cefr": "A1"
+    }
+  },
+  "items": [
+    {
+      "prompt_id": "en_placement_1",
+      "skill": "writing",
+      "cefr_target": "A2",
+      "prompt": "Write 2–3 sentences about your favorite hobby. Say what it is, how often you do it, and why you enjoy it.",
+      "answer": "I love playing basketball. I play it every weekend with my friends at the park.",
+      "score": 51.86,
+      "cefr": "B1",
+      "framework_bands": {
+        "cefr": "B1",
+        "ielts_approx": 6.1,
+        "toeic_approx": 563
+      },
+      "features": {
+        "tokens": 15,
+        "unique_tokens": 14,
+        "avg_token_len": 4.2,
+        "script_bonus": 4.0,
+        "connectors": 0,
+        "sentences": 2
+      }
+    },
+    {
+      "prompt_id": "en_placement_2",
+      "skill": "writing",
+      "cefr_target": "B1",
+      "prompt": "Describe a recent trip or outing you took. Include where you went, who was with you, and one thing that surprised you.",
+      "answer": "Last month I went to the beach with my family. We swam in the ocean and built sandcastles. I was surprised to see dolphins jumping near the shore!",
+      "score": 59.41,
+      "cefr": "B1",
+      "framework_bands": {
+        "cefr": "B1",
+        "ielts_approx": 6.6,
+        "toeic_approx": 615
+      },
+      "features": {
+        "tokens": 28,
+        "unique_tokens": 24,
+        "avg_token_len": 4.143,
+        "script_bonus": 4.0,
+        "connectors": 1,
+        "sentences": 3
+      }
+    },
+    {
+      "prompt_id": "en_placement_3",
+      "skill": "writing",
+      "cefr_target": "B2",
+      "prompt": "Some people think technology makes us more connected; others say it makes us more isolated. Write a short paragraph giving your opinion and one reason.",
+      "answer": "I think technology makes us more connected because we can talk to people anywhere instantly. But it is important to also spend time with people face to face.",
+      "score": 60.4,
+      "cefr": "B1",
+      "framework_bands": {
+        "cefr": "B1",
+        "ielts_approx": 6.6,
+        "toeic_approx": 622
+      },
+      "features": {
+        "tokens": 28,
+        "unique_tokens": 24,
+        "avg_token_len": 4.571,
+        "script_bonus": 4.0,
+        "connectors": 2,
+        "sentences": 2
+      }
+    },
+    {
+      "prompt_id": "en_placement_4",
+      "skill": "vocabulary",
+      "cefr_target": "B1",
+      "prompt": "Read this short text and then rewrite it using different words while keeping the same meaning: 'The weather was very hot, so we decided to stay inside and watch a movie.'",
+      "answer": "It was extremely warm outside, so we chose to remain indoors and watch a film.",
+      "score": 74.68,
+      "cefr": "B2",
+      "framework_bands": {
+        "cefr": "B2",
+        "ielts_approx": 7.5,
+        "toeic_approx": 722
+      },
+      "features": {
+        "tokens": 15,
+        "unique_tokens": 15,
+        "avg_token_len": 4.133,
+        "script_bonus": 4.0,
+        "connectors": 2,
+        "sentences": 1
+      }
+    },
+    {
+      "prompt_id": "en_placement_5",
+      "skill": "grammar",
+      "cefr_target": "B2",
+      "prompt": "Complete the following sentence in a natural way, using at least one conditional form: 'If I had more free time, ...'",
+      "answer": "If I had more free time, I would travel to different countries and learn about their cultures.",
+      "score": 30.55,
+      "cefr": "A1",
+      "framework_bands": {
+        "cefr": "A1",
+        "ielts_approx": 4.8,
+        "toeic_approx": 413
+      },
+      "features": {
+        "tokens": 17,
+        "unique_tokens": 16,
+        "avg_token_len": 4.471,
+        "script_bonus": 4.0,
+        "connectors": 2,
+        "sentences": 1
+      }
+    }
+  ],
+  "ready_for_ui": true,
+  "model": "ToyAbilityModel",
+  "generated_by": "nokaman placement"
+}

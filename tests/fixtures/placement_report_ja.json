@@ -1,0 +1,142 @@
+{
+  "language": "ja",
+  "language_name": "Japanese",
+  "frameworks": [
+    "CEFR",
+    "JLPT"
+  ],
+  "n_items": 5,
+  "overall_score": 60.17,
+  "overall_cefr": "B1",
+  "framework_bands": {
+    "cefr": "B1",
+    "jlpt": "N3"
+  },
+  "skill_breakdown": {
+    "writing": {
+      "n_items": 3,
+      "average_score": 58.94,
+      "cefr": "B1"
+    },
+    "vocabulary": {
+      "n_items": 1,
+      "average_score": 76.45,
+      "cefr": "B2"
+    },
+    "grammar": {
+      "n_items": 1,
+      "average_score": 47.56,
+      "cefr": "A2"
+    }
+  },
+  "items": [
+    {
+      "prompt_id": "ja_placement_1",
+      "skill": "writing",
+      "cefr_target": "A2",
+      "prompt": "好きな季節について2〜3文で書いてください。どの季節が好きか、その季節に何をするか、なぜ好きなのかを書いてください。",
+      "answer": "私の一番好きな季節は春です。桜が咲いて、暖かくなって、外でピクニックをするのが楽しいです。",
+      "score": 58.86,
+      "cefr": "B1",
+      "framework_bands": {
+        "cefr": "B1",
+        "jlpt": "N3"
+      },
+      "features": {
+        "tokens": 4,
+        "unique_tokens": 4,
+        "avg_token_len": 10.25,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 2
+      }
+    },
+    {
+      "prompt_id": "ja_placement_2",
+      "skill": "writing",
+      "cefr_target": "B1",
+      "prompt": "最近読んだ本や漫画について説明してください。内容を簡単にまとめ、どんなところが面白かったか教えてください。",
+      "answer": "最近読んだ本はコンビニ人間です。コンビニで働く女性の日常を描いた小説で、現代社会における普通とは何かを考えさせられました。",
+      "score": 58.12,
+      "cefr": "B1",
+      "framework_bands": {
+        "cefr": "B1",
+        "jlpt": "N3"
+      },
+      "features": {
+        "tokens": 3,
+        "unique_tokens": 3,
+        "avg_token_len": 19.333,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 2
+      }
+    },
+    {
+      "prompt_id": "ja_placement_3",
+      "skill": "writing",
+      "cefr_target": "B2",
+      "prompt": "オンライン学習と対面授業のどちらが効果的だと思いますか。自分の意見と理由を一つ挙げて説明してください。",
+      "answer": "私はオンライン学習の方が効果的だと思います。なぜなら、自分のペースで学べるからです。ただし、友達と話し合う機会が減るという欠点もあります。",
+      "score": 59.85,
+      "cefr": "B1",
+      "framework_bands": {
+        "cefr": "B1",
+        "jlpt": "N3"
+      },
+      "features": {
+        "tokens": 5,
+        "unique_tokens": 5,
+        "avg_token_len": 12.8,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 3
+      }
+    },
+    {
+      "prompt_id": "ja_placement_4",
+      "skill": "vocabulary",
+      "cefr_target": "B1",
+      "prompt": "次の文を、意味を変えずに違う表現で書き直してください: '昨日はとても疲れていたので、早く寝ました。'",
+      "answer": "昨日はとても疲れていたので、早めに休みました。",
+      "score": 76.45,
+      "cefr": "B2",
+      "framework_bands": {
+        "cefr": "B2",
+        "jlpt": "N2"
+      },
+      "features": {
+        "tokens": 2,
+        "unique_tokens": 2,
+        "avg_token_len": 10.5,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 1
+      }
+    },
+    {
+      "prompt_id": "ja_placement_5",
+      "skill": "grammar",
+      "cefr_target": "B2",
+      "prompt": "次の文を完成させてください。条件形（〜ば、〜たら）を使ってください: 'もし明日時間があれば、...'",
+      "answer": "もし明日時間があれば、友達と映画を見に行きたいです。",
+      "score": 47.56,
+      "cefr": "A2",
+      "framework_bands": {
+        "cefr": "A2",
+        "jlpt": "N4"
+      },
+      "features": {
+        "tokens": 2,
+        "unique_tokens": 2,
+        "avg_token_len": 12.0,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 1
+      }
+    }
+  ],
+  "ready_for_ui": true,
+  "model": "ToyAbilityModel",
+  "generated_by": "nokaman placement"
+}

@@ -1,0 +1,154 @@
+{
+  "language": "ko",
+  "language_name": "Korean",
+  "frameworks": [
+    "CEFR",
+    "TOPIK"
+  ],
+  "n_items": 5,
+  "overall_score": 53.65,
+  "overall_cefr": "B1",
+  "framework_bands": {
+    "cefr": "B2",
+    "topik": "4",
+    "topik_track": "TOPIK II",
+    "topik_label": "TOPIK II Level 4"
+  },
+  "skill_breakdown": {
+    "writing": {
+      "n_items": 3,
+      "average_score": 58.14,
+      "cefr": "B1"
+    },
+    "vocabulary": {
+      "n_items": 1,
+      "average_score": 71.89,
+      "cefr": "B2"
+    },
+    "grammar": {
+      "n_items": 1,
+      "average_score": 21.95,
+      "cefr": "A1"
+    }
+  },
+  "items": [
+    {
+      "prompt_id": "ko_placement_1",
+      "skill": "writing",
+      "cefr_target": "A2",
+      "prompt": "좋아하는 음식에 대해 2-3문장으로 써 보세요. 무슨 음식인지, 얼마나 자주 먹는지, 왜 좋아하는지 이야기해 주세요.",
+      "answer": "제가 가장 좋아하는 음식은 김치찌개입니다. 일주일에 두 번 정도 먹고, 매운 맛이 좋아서 자주 찾게 됩니다.",
+      "score": 54.95,
+      "cefr": "B1",
+      "framework_bands": {
+        "cefr": "B1",
+        "topik": "3",
+        "topik_track": "TOPIK II",
+        "topik_label": "TOPIK II Level 3"
+      },
+      "features": {
+        "tokens": 16,
+        "unique_tokens": 16,
+        "avg_token_len": 2.625,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 2
+      }
+    },
+    {
+      "prompt_id": "ko_placement_2",
+      "skill": "writing",
+      "cefr_target": "B1",
+      "prompt": "최근에 본 영화나 드라마에 대해 설명해 보세요. 줄거리를 간단히 말하고, 어떤 점이 인상 깊었는지 이야기해 주세요.",
+      "answer": "최근에 본 영화는 기생충입니다. 가난한 가족이 부잣집에 하나씩 취직하면서 벌어지는 이야기인데, 반전이 있어서 아주 인상 깊었습니다.",
+      "score": 56.56,
+      "cefr": "B1",
+      "framework_bands": {
+        "cefr": "B1",
+        "topik": "3",
+        "topik_track": "TOPIK II",
+        "topik_label": "TOPIK II Level 3"
+      },
+      "features": {
+        "tokens": 16,
+        "unique_tokens": 16,
+        "avg_token_len": 3.438,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 2
+      }
+    },
+    {
+      "prompt_id": "ko_placement_3",
+      "skill": "writing",
+      "cefr_target": "B2",
+      "prompt": "환경 보호를 위해 개인이 할 수 있는 일에는 어떤 것이 있을까요? 자신의 의견과 한 가지 구체적인 예를 들어 설명해 보세요.",
+      "answer": "환경 보호를 위해 개인이 할 수 있는 일로는 일회용품 사용을 줄이는 것이 중요하다고 생각합니다. 예를 들어 텀블러를 사용하고 장바구니를 가지고 다니는 작은 실천이 모이면 큰 변화를 만들 수 있습니다.",
+      "score": 62.91,
+      "cefr": "B1",
+      "framework_bands": {
+        "cefr": "B1",
+        "topik": "3",
+        "topik_track": "TOPIK II",
+        "topik_label": "TOPIK II Level 3"
+      },
+      "features": {
+        "tokens": 29,
+        "unique_tokens": 28,
+        "avg_token_len": 2.793,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 2
+      }
+    },
+    {
+      "prompt_id": "ko_placement_4",
+      "skill": "vocabulary",
+      "cefr_target": "B1",
+      "prompt": "다음 문장을 다른 표현으로 바꿔 써 보세요. 의미는 같게 유지해야 합니다: '요즘 날씨가 너무 추워서 밖에 나가기 싫어요.'",
+      "answer": "날씨가 매우 추워서 밖에 나가고 싶지 않습니다.",
+      "score": 71.89,
+      "cefr": "B2",
+      "framework_bands": {
+        "cefr": "B2",
+        "topik": "4",
+        "topik_track": "TOPIK II",
+        "topik_label": "TOPIK II Level 4"
+      },
+      "features": {
+        "tokens": 7,
+        "unique_tokens": 7,
+        "avg_token_len": 2.714,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 1
+      }
+    },
+    {
+      "prompt_id": "ko_placement_5",
+      "skill": "grammar",
+      "cefr_target": "B2",
+      "prompt": "다음 문장을 완성해 보세요. '-면 좋겠다' 또는 '-더라면' 형태를 사용해야 합니다: '만약 한국에 여행을 갈 수 있다면, ...'",
+      "answer": "만약 한국에 여행을 갈 수 있다면, 다양한 길거리 음식을 먹어 보고 전통 시장도 방문하고 싶습니다.",
+      "score": 21.95,
+      "cefr": "A1",
+      "framework_bands": {
+        "cefr": "A1",
+        "topik": "1",
+        "topik_track": "TOPIK I",
+        "topik_label": "TOPIK I Level 1"
+      },
+      "features": {
+        "tokens": 15,
+        "unique_tokens": 15,
+        "avg_token_len": 2.6,
+        "script_bonus": 8.0,
+        "connectors": 0,
+        "sentences": 1
+      }
+    }
+  ],
+  "ready_for_ui": true,
+  "model": "ToyAbilityModel",
+  "generated_by": "nokaman placement"
+}
