@@ -391,6 +391,58 @@ def session_end(
     _print_json(data=result)
 
 
+
+@app.command("score")
+def score_cmd(
+    sample: str = typer.Option(..., "--sample", help="Path to a learner sample JSON file"),
+) -> None:
+    """Score a single learner sample with rich dimension table."""
+    from pathlib import Path
+
+    sample_path = Path(sample)
+    if not sample_path.exists():
+        console.print(f"[red]Sample not found:[/red] {sample}")
+        raise typer.Exit(code=1)
+
+    result = evaluate_sample_file(sample_path)
+
+    # Header
+    console.print(f"\n[bold]Sample:[/bold] {sample_path.name}")
+    console.print(f"  Language: {result.get('language', '?')}  |  Skill: {result.get('skill', '?')}  |  CEFR: {result.get('cefr', '?')}")
+
+    # Dimension scores table
+    dims = result.get("dimensions") or result.get("scores") or {}
+    if dims:
+        table = Table(title="Dimension Scores")
+        table.add_column("Dimension", style="cyan")
+        table.add_column("Score", justify="right")
+        table.add_column("Band", justify="right")
+        table.add_column("Details")
+        for dim_name, dim_data in sorted((dims or {}).items()):
+            if isinstance(dim_data, dict):
+                score = dim_data.get("score", dim_data.get("value", "?"))
+                band = dim_data.get("band", dim_data.get("level", "?"))
+                details = str(dim_data.get("notes", dim_data.get("details", "")))[:60]
+            else:
+                score = dim_data
+                band = "?"
+                details = ""
+            table.add_row(str(dim_name), str(score), str(band), details)
+        console.print(table)
+    else:
+        console.print("[yellow]No dimension scores available[/yellow]")
+
+    # Overall score
+    overall = result.get("score") or result.get("overall_score")
+    if overall is not None:
+        console.print(f"\n[bold]Overall Score:[/bold] {overall}")
+
+    # Band information
+    bands = result.get("bands") or result.get("band_info")
+    if bands:
+        console.print(f"[bold]CEFR Band:[/bold] {result.get('cefr', '?')}")
+
+
 @app.command("gui")
 def gui_cmd() -> None:
     """Launch modern Qt desktop demo (pip install -e '.[gui]')."""
