@@ -266,6 +266,92 @@ def eval_batch(
     console.print(f"Report: {out_path}")
 
 
+# ── score command ──────────────────────────────────────────
+
+
+@app.command("score")
+def score_cmd(
+    sample: Path = typer.Option(
+        ..., "--sample", "-s", exists=True, dir_okay=False, help="Path to a sample JSON file"
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON instead of tables"),
+):
+    """Score a sample file with dimension table (rich output)."""
+    from nokaman.eval.pipeline import evaluate_sample_file
+    from nokaman.data.loader import load_sample
+
+    sample_data = load_sample(sample)
+    result = evaluate_sample_file(sample)
+
+    if json_output:
+        console.print_json(data=result)
+        return
+
+    # ── Dimensions table ──
+    dim_table = Table(title=f"Score: {sample.name}")
+    dim_table.add_column("Dimension", style="cyan")
+    dim_table.add_column("Value", style="green")
+
+    dim_table.add_row("Language", str(result.get("language", "?")))
+    dim_table.add_row("Skill", str(result.get("skill", "?")))
+    dim_table.add_row("Score", f"{result.get('score', 0):.2f} / 100")
+    dim_table.add_row("CEFR", str(result.get("cefr", "?")))
+
+    bands = result.get("framework_bands") or {}
+    if bands:
+        band_str = ", ".join(f"{k}: {v}" for k, v in bands.items())
+        dim_table.add_row("Framework Bands", band_str)
+
+    expected = sample_data.get("expected_cefr")
+    if expected:
+        band_check = result.get("band_check") or {}
+        match_icon = "✅" if band_check.get("exact_match") else "⚠️"
+        dim_table.add_row(
+            "Expected CEFR",
+            f"{expected} {match_icon} (predicted: {band_check.get('predicted', '?')})",
+        )
+        if not band_check.get("exact_match"):
+            dim_table.add_row("CEFR Distance", str(band_check.get("distance", "?")))
+
+    console.print(dim_table)
+
+    # ── Features table ──
+    features = result.get("features") or {}
+    if features:
+        feat_table = Table(title="Linguistic Features")
+        feat_table.add_column("Feature", style="cyan")
+        feat_table.add_column("Value", style="yellow", justify="right")
+        feat_table.add_column("Bar", style="green")
+
+        max_tokens = max(1, max(features.get("tokens", 1), features.get("sentences", 1)))
+        for key, label in [
+            ("tokens", "Tokens"),
+            ("unique_tokens", "Unique Tokens"),
+            ("avg_token_len", "Avg Token Length"),
+            ("sentences", "Sentences"),
+            ("connectors", "Connectors"),
+            ("script_bonus", "Script Bonus"),
+        ]:
+            val = features.get(key)
+            if val is not None:
+                if isinstance(val, float):
+                    disp = f"{val:.3f}" if val < 1 else f"{val:.2f}"
+                else:
+                    disp = str(val)
+                # Render bar
+                try:
+                    numeric = float(val)
+                    bar_len = int(min(20, max(1, numeric / max(20, max_tokens / 10) * 20)))
+                except (ValueError, TypeError):
+                    bar_len = 1
+                bar = "█" * bar_len
+                feat_table.add_row(label, disp, bar)
+        console.print(feat_table)
+
+    # ── JSON fallback hint ──
+    console.print("[dim]Pass --json to see raw JSON output[/dim]")
+
+
 @eval_app.command("summary")
 def eval_summary() -> None:
     """Compact inventory of samples + batch metrics."""
