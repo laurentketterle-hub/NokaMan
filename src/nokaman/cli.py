@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
 from pathlib import Path
 from typing import Optional
@@ -240,6 +242,7 @@ def eval_samples() -> None:
 def eval_batch(
     out: Optional[Path] = typer.Option(None, "--out", "-o"),
     table: bool = typer.Option(True, "--table/--json-only"),
+    fmt: str = typer.Option("json", "--format", "-f", help="Output format: json or csv"),
 ) -> None:
     report = batch_evaluate()
     out_path = out or (RUNS_DIR / "batch_eval.json")
@@ -249,7 +252,26 @@ def eval_batch(
         f"[green]batch[/green] n={report['n_samples']} exact={report['exact_cefr_hit_rate']} "
         f"adjacent={report['adjacent_cefr_hit_rate']}"
     )
-    if table and report.get("by_language"):
+    if fmt == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["file", "language", "skill", "cefr", "score"])
+        files = list_sample_files()
+        for path in files:
+            result = evaluate_sample_file(path)
+            writer.writerow([
+                path.name,
+                result.get("language", ""),
+                result.get("skill", ""),
+                result.get("cefr", ""),
+                str(result.get("score", "")),
+            ])
+        csv_text = output.getvalue()
+        csv_path = out_path.with_suffix(".csv")
+        csv_path.write_text(csv_text, encoding="utf-8")
+        console.print(csv_text)
+        console.print(f"CSV: {csv_path}")
+    elif table and report.get("by_language"):
         t = Table(title="By language")
         t.add_column("Lang")
         t.add_column("n")
@@ -294,6 +316,39 @@ def eval_placement(
 ) -> None:
     result = placement_test(lang, answer)
     _print_json(data=result)
+
+
+@eval_app.command("score")
+def eval_score(
+    sample: Optional[Path] = typer.Option(
+        None, "--sample", "-s", exists=True, dir_okay=False, help="Sample JSON file to score"
+    ),
+) -> None:
+    """Score a sample file with rich table output of dimension scores."""
+    files = [sample] if sample else list_sample_files()
+    if not files:
+        console.print("[yellow]No samples found[/yellow]")
+        raise typer.Exit()
+    for path in files:
+        result = evaluate_sample_file(path)
+        console.print(f"\n[bold]{path.name}[/bold]")
+        if "dimensions" in result:
+            t = Table(title="Dimension Scores")
+            t.add_column("Dimension", style="cyan")
+            t.add_column("Score", style="green")
+            t.add_column("CEFR", style="yellow")
+            for dim_name, dim_data in sorted(result["dimensions"].items()):
+                score = dim_data if isinstance(dim_data, (int, float)) else dim_data.get("score", dim_data)
+                cefr = dim_data.get("cefr", "") if isinstance(dim_data, dict) else ""
+                t.add_row(str(dim_name), str(score), str(cefr))
+            console.print(t)
+        else:
+            t = Table(title="Result")
+            t.add_column("Field", style="cyan")
+            t.add_column("Value", style="green")
+            for k, v in sorted(result.items()):
+                t.add_row(str(k), str(v))
+            console.print(t)
 
 
 @train_app.command("toy")
